@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Conversational Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #343541;
+            --bg-secondary: #444654;
+            --text-primary: #FFFFFF;
+            --text-secondary: #D1D5DB;
+            --accent-color: #10A37F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--bg-primary);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .chat-header h1 {
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .chat-header .actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .chat-header .actions i {
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .chat-header .actions i:hover {
+            color: var(--accent-color);
+        }
+
+        #chatbox {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .message.user {
+            background-color: var(--bg-primary);
+        }
+
+        .message.ai {
+            background-color: rgba(52, 53, 65, 0.5);
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .user .message-avatar {
+            background-color: #10A37F;
+            color: white;
+        }
+
+        .ai .message-avatar {
+            background-color: #19C37D;
+            color: white;
+        }
+
+        .message-content {
+            flex-grow: 1;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 15px 20px;
+            background-color: var(--bg-primary);
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        #userInput {
+            flex-grow: 1;
+            padding: 12px 15px;
+            background-color: var(--bg-secondary);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+        }
+
+        #sendButton {
+            background-color: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            margin-left: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #sendButton:hover {
+            background-color: #0e8a64;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-secondary);
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        @keyframes typing {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AI Conversational Assistant</h1>
+            <div class="actions">
+                <i class="fas fa-sync"></i>
+                <i class="fas fa-expand"></i>
+                <i class="fas fa-cog"></i>
+            </div>
+        </div>
+        
+        <div id="chatbox"></div>
+        
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button id="sendButton">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        
+        <div class="typing-indicator">
+            AI is typing 
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        const chatbox = document.getElementById('chatbox');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.querySelector('.typing-indicator');
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                displayMessage('user', message);
+                userInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.style.display = 'flex';
+                
+                // Send to backend
+                fetch(`/get?msg=${encodeURIComponent(message)}&session_id=${sessionId || ''}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        sessionId = data.session_id;
+                        
+                        // Hide typing indicator
+                        typingIndicator.style.display = 'none';
+                        
+                        displayMessage('ai', data.response);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        typingIndicator.style.display = 'none';
+                    });
+            }
+        }
+
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        sendButton.addEventListener('click', sendMessage);
+
+        function displayMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            
+            messageElement.innerHTML = `
+                <div class="message-avatar">${sender === 'user' ? 'U' : 'AI'}</div>
+                <div class="message-content">${message}</div>
+            `;
+            
+            chatbox.appendChild(messageElement);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+</body>
+</html>

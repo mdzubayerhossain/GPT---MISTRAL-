@@ -1,0 +1,2 @@
+2024-12-18 00:58:18,007 - ERROR - Redis connection failed: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+2024-12-18 00:58:33,657 - ERROR - Redis connection failed: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
